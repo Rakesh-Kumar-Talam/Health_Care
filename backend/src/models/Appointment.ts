@@ -1,5 +1,13 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface IMedication {
+  medicineName: string;
+  dosage?: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
+}
+
 export interface IAppointment extends Document {
   patientId: mongoose.Types.ObjectId;
   patientUserId: mongoose.Types.ObjectId;
@@ -21,6 +29,7 @@ export interface IAppointment extends Document {
   symptoms: string;
   notes?: string;
   prescription?: string;
+  medications?: IMedication[];
   fee: number;
   paymentStatus: 'paid' | 'pending';
   videoRoomId?: string;
@@ -114,6 +123,15 @@ const AppointmentSchema = new Schema<IAppointment>(
       type: String,
       default: '',
     },
+    medications: [
+      {
+        medicineName: { type: String, required: true },
+        dosage: { type: String, default: '' },
+        frequency: { type: String, default: 'Twice daily (1-0-1)' },
+        duration: { type: String, default: '5 Days' },
+        instructions: { type: String, default: 'After food' },
+      },
+    ],
     fee: {
       type: Number,
       default: 50,

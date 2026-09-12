@@ -36,6 +36,11 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const redirectPath = location.state?.from?.pathname
+    ? `${location.state.from.pathname}${location.state.from.search || ""}`
+    : null;
+  const redirectMessage = location.state?.message;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -45,8 +50,9 @@ export const LoginPage: React.FC = () => {
       const res = await authService.login({ email, password });
       if (res.success && res.token && res.user) {
         login(res.user, res.token);
-        const destination = res.user.role === "doctor" ? "/doctor/dashboard" : "/feed";
-        navigate(destination);
+        const destination =
+          redirectPath || (res.user.role === "doctor" ? "/doctor/dashboard" : "/feed");
+        navigate(destination, { replace: true });
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid email or password");
@@ -60,8 +66,9 @@ export const LoginPage: React.FC = () => {
     setError(null);
     try {
       const u = await loginAsDemo(demoRole);
-      const destination = u.role === "doctor" ? "/doctor/dashboard" : "/feed";
-      navigate(destination);
+      const destination =
+        redirectPath || (u.role === "doctor" ? "/doctor/dashboard" : "/feed");
+      navigate(destination, { replace: true });
     } catch (err: any) {
       setError(err.message || "Demo login failed");
     } finally {
@@ -146,6 +153,16 @@ export const LoginPage: React.FC = () => {
               or with password
             </span>
           </div>
+
+          {redirectMessage && (
+            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2.5 shadow-sm">
+              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Authentication Required</p>
+                <p className="mt-0.5 text-amber-700 dark:text-amber-400">{redirectMessage}</p>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">

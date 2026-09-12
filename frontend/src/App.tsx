@@ -16,6 +16,7 @@ import { DoctorDetailPage } from "./pages/DoctorDetailPage";
 import { HospitalListingPage } from "./pages/HospitalListingPage";
 import { HospitalDetailPage } from "./pages/HospitalDetailPage";
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
+import { MyRecordsPage } from "./pages/MyRecordsPage";
 import { DoctorDashboardPage } from "./pages/DoctorDashboardPage";
 import { DoctorAppointmentsPage } from "./pages/DoctorAppointmentsPage";
 import { DoctorContentManagePage } from "./pages/DoctorContentManagePage";
@@ -29,15 +30,52 @@ function App() {
             <Navbar />
             <main className="flex-1">
               <Routes>
-                {/* Public & Discovery Routes */}
+                {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/feed" element={<PatientFeedPage />} />
-                <Route path="/doctors" element={<DoctorListingPage />} />
-                <Route path="/doctors/:id" element={<DoctorDetailPage />} />
-                <Route path="/hospitals" element={<HospitalListingPage />} />
-                <Route path="/hospitals/:id" element={<HospitalDetailPage />} />
+
+                {/* Discovery & Operational Routes (Protected - Login Required) */}
+                <Route
+                  path="/feed"
+                  element={
+                    <ProtectedRoute>
+                      <PatientFeedPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/doctors"
+                  element={
+                    <ProtectedRoute>
+                      <DoctorListingPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/doctors/:id"
+                  element={
+                    <ProtectedRoute>
+                      <DoctorDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/hospitals"
+                  element={
+                    <ProtectedRoute>
+                      <HospitalListingPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/hospitals/:id"
+                  element={
+                    <ProtectedRoute>
+                      <HospitalDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Patient Routes */}
                 <Route
@@ -45,6 +83,14 @@ function App() {
                   element={
                     <ProtectedRoute patientOnly>
                       <MyAppointmentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/my-records"
+                  element={
+                    <ProtectedRoute patientOnly>
+                      <MyRecordsPage />
                     </ProtectedRoute>
                   }
                 />

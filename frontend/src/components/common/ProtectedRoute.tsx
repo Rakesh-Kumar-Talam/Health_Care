@@ -25,7 +25,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return (
+      <Navigate
+        to="/login"
+        state={{
+          from: location,
+          message: "Please sign in or create an account to access this healthcare feature.",
+        }}
+        replace
+      />
+    );
   }
 
   if (doctorOnly && user?.role !== "doctor") {

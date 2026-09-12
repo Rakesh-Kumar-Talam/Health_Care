@@ -14,6 +14,7 @@ import reelRoutes from './routes/reelRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import statsRoutes from './routes/statsRoutes';
 import seedRoutes from './routes/seedRoutes';
+import recordRoutes from './routes/recordRoutes';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/reels', reelRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/records', recordRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/seed', seedRoutes);
 

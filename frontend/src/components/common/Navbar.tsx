@@ -17,6 +17,7 @@ import {
   User,
   PlusCircle,
   Video,
+  FileText,
 } from "lucide-react";
 
 export const Navbar: React.FC = () => {
@@ -44,6 +45,18 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const handleAnchorClick = (anchorId: string) => {
+    if (location.pathname !== "/") {
+      navigate(`/#${anchorId}`);
+    } else {
+      const el = document.getElementById(anchorId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -58,100 +71,150 @@ export const Navbar: React.FC = () => {
                 Cura<span className="text-teal-600 dark:text-teal-400">Pulse</span>
               </span>
               <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 -mt-1">
-                Healthcare Discovery
+                Healthcare Ecosystem
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
-            <Link
-              to="/feed"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive("/feed")
-                  ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Compass className="w-4 h-4" />
-              Health Feed
-            </Link>
-
-            <Link
-              to="/doctors"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive("/doctors")
-                  ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Stethoscope className="w-4 h-4" />
-              Find Doctors
-            </Link>
-
-            <Link
-              to="/hospitals"
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive("/hospitals")
-                  ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
-                  : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              Hospitals
-            </Link>
-
-            {isAuthenticated && user?.role === "patient" && (
-              <Link
-                to="/my-appointments"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                  isActive("/my-appointments")
-                    ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
-                    : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                }`}
-              >
-                <Calendar className="w-4 h-4" />
-                My Appointments
-              </Link>
-            )}
-
-            {isAuthenticated && user?.role === "doctor" && (
+            {isAuthenticated ? (
               <>
                 <Link
-                  to="/doctor/dashboard"
+                  to="/feed"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                    isActive("/doctor/dashboard")
+                    isActive("/feed")
                       ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
                       : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
+                  <Compass className="w-4 h-4" />
+                  Health Feed
                 </Link>
 
                 <Link
-                  to="/doctor/appointments"
+                  to="/doctors"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                    isActive("/doctor/appointments")
+                    isActive("/doctors")
                       ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
                       : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <Calendar className="w-4 h-4" />
-                  Bookings
+                  <Stethoscope className="w-4 h-4" />
+                  Find Doctors
                 </Link>
 
                 <Link
-                  to="/doctor/content"
+                  to="/hospitals"
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                    isActive("/doctor/content")
+                    isActive("/hospitals")
                       ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
                       : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <PlusCircle className="w-4 h-4" />
-                  My Studio
+                  <Building2 className="w-4 h-4" />
+                  Hospitals
                 </Link>
+
+                {user?.role === "patient" && (
+                  <>
+                    <Link
+                      to="/my-appointments"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive("/my-appointments")
+                          ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      My Appointments
+                    </Link>
+
+                    <Link
+                      to="/my-records"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive("/my-records")
+                          ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      Health Records
+                    </Link>
+                  </>
+                )}
+
+                {user?.role === "doctor" && (
+                  <>
+                    <Link
+                      to="/doctor/dashboard"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive("/doctor/dashboard")
+                          ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Dashboard
+                    </Link>
+
+                    <Link
+                      to="/doctor/appointments"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive("/doctor/appointments")
+                          ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Bookings
+                    </Link>
+
+                    <Link
+                      to="/doctor/content"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive("/doctor/content")
+                          ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      My Studio
+                    </Link>
+                  </>
+                )}
+              </>
+            ) : (
+              /* Public Informational Showcase Links */
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick("features")}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Platform Features
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick("how-it-works")}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  How It Works
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick("specialties")}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Specialties
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick("helpline")}
+                  className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  24/7 Helpline
+                </button>
               </>
             )}
           </nav>
@@ -264,61 +327,106 @@ export const Navbar: React.FC = () => {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-6 space-y-2">
-          <Link
-            to="/feed"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            Health Feed
-          </Link>
-          <Link
-            to="/doctors"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            Find Doctors
-          </Link>
-          <Link
-            to="/hospitals"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            Hospitals
-          </Link>
-
-          {isAuthenticated && user?.role === "patient" && (
-            <Link
-              to="/my-appointments"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              My Appointments
-            </Link>
-          )}
-
-          {isAuthenticated && user?.role === "doctor" && (
+          {isAuthenticated ? (
             <>
               <Link
-                to="/doctor/dashboard"
+                to="/feed"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                Doctor Dashboard
+                Health Feed
               </Link>
               <Link
-                to="/doctor/appointments"
+                to="/doctors"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                Manage Bookings
+                Find Doctors
               </Link>
               <Link
-                to="/doctor/content"
+                to="/hospitals"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
-                My Posts & Reels
+                Hospitals
               </Link>
+
+              {user?.role === "patient" && (
+                <>
+                  <Link
+                    to="/my-appointments"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    My Appointments
+                  </Link>
+                  <Link
+                    to="/my-records"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Health Records & Reports
+                  </Link>
+                </>
+              )}
+
+              {user?.role === "doctor" && (
+                <>
+                  <Link
+                    to="/doctor/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Doctor Dashboard
+                  </Link>
+                  <Link
+                    to="/doctor/appointments"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Manage Bookings
+                  </Link>
+                  <Link
+                    to="/doctor/content"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    My Posts & Reels
+                  </Link>
+                </>
+              )}
+            </>
+          ) : (
+            /* Public Informational Drawer Links */
+            <>
+              <button
+                type="button"
+                onClick={() => handleAnchorClick("features")}
+                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Platform Features
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAnchorClick("how-it-works")}
+                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                How It Works
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAnchorClick("specialties")}
+                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Specialties
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAnchorClick("helpline")}
+                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                24/7 Helpline
+              </button>
             </>
           )}
 

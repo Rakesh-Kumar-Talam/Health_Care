@@ -1,4 +1,5 @@
 import API from "./api";
+import { Medication } from "../types";
 
 export const appointmentService = {
   bookAppointment: async (data: any) => {
@@ -13,7 +14,15 @@ export const appointmentService = {
     const res = await API.get("/appointments/doctor", { params });
     return res.data;
   },
-  updateStatus: async (id: string, data: { status?: string; notes?: string; prescription?: string }) => {
+  updateStatus: async (
+    id: string,
+    data: {
+      status?: string;
+      notes?: string;
+      prescription?: string;
+      medications?: Medication[];
+    }
+  ) => {
     const res = await API.patch(`/appointments/${id}/status`, data);
     return res.data;
   },
