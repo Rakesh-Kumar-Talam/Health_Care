@@ -1,5 +1,5 @@
 import API from "./api";
-import { HealthRecord, RecordCategory, Medication } from "../types";
+import { HealthRecord, RecordCategory, Medication, Patient } from "../types";
 
 export interface RecordQueryParams {
   category?: string;
@@ -36,6 +36,24 @@ export const recordService = {
         discharge_summary: number;
         other: number;
       };
+      records: HealthRecord[];
+    };
+  },
+
+  getPatientRecords: async (patientUserId: string, params?: RecordQueryParams) => {
+    const res = await API.get(`/records/patient/${patientUserId}`, { params });
+    return res.data as {
+      success: boolean;
+      count: number;
+      counts: {
+        total: number;
+        prescription: number;
+        scanning: number;
+        lab_report: number;
+        discharge_summary: number;
+        other: number;
+      };
+      patientProfile?: Patient;
       records: HealthRecord[];
     };
   },

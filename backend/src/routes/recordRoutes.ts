@@ -5,6 +5,7 @@ import {
   getRecordById,
   updateRecord,
   deleteRecord,
+  getPatientRecords,
 } from '../controllers/recordController';
 import { authenticate } from '../middleware/auth';
 
@@ -14,6 +15,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', getMyRecords);
+router.get('/patient/:patientUserId', getPatientRecords);
 router.post('/', createRecord);
 router.get('/:id', getRecordById);
 router.put('/:id', updateRecord);

@@ -28,6 +28,7 @@ import {
   Settings2,
   RotateCcw,
   Check,
+  Activity,
 } from "lucide-react";
 import {
   BUILT_IN_CLINICAL_KITS,
@@ -39,6 +40,7 @@ import {
   saveQuickApplyKitIds,
   DEFAULT_QUICK_APPLY_KIT_IDS,
 } from "../utils/prescriptionHelpers";
+import { PatientRecordsModal } from "../components/doctor/PatientRecordsModal";
 
 export const DoctorAppointmentsPage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -64,6 +66,12 @@ export const DoctorAppointmentsPage: React.FC = () => {
   const [quickKitIds, setQuickKitIds] = useState<string[]>(getQuickApplyKitIds);
   const [showEditQuickTabsModal, setShowEditQuickTabsModal] = useState<boolean>(false);
   const [tempQuickKitIds, setTempQuickKitIds] = useState<string[]>([]);
+  const [activePatientForRecords, setActivePatientForRecords] = useState<{
+    patientUserId: string;
+    patientName: string;
+    patientEmail?: string;
+    patientPhone?: string;
+  } | null>(null);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -379,19 +387,41 @@ export const DoctorAppointmentsPage: React.FC = () => {
               {/* Prescription / Notes Editor or Display */}
               {editingId === app._id ? (
                 <div className="p-4 sm:p-5 rounded-2xl bg-teal-50/70 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-900 space-y-4">
-                  <div className="font-bold text-xs text-teal-900 dark:text-teal-200 flex items-center justify-between">
+                  <div className="font-bold text-xs text-teal-900 dark:text-teal-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-teal-600" />
                       <span>Write Consultation Diagnosis & Medication Prescription</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddMedicationRow}
-                      className="px-2.5 py-1 rounded-lg bg-teal-600 text-white text-[11px] font-bold hover:bg-teal-700 flex items-center gap-1 shadow-sm"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add Tablet</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {app.status === "confirmed" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const rawId = app.patientUserId || (app as any).patientId || "";
+                            const safeId = typeof rawId === "object" && rawId !== null ? (rawId as any)._id || String(rawId) : String(rawId);
+                            setActivePatientForRecords({
+                              patientUserId: safeId,
+                              patientName: app.patientName,
+                              patientEmail: app.patientEmail,
+                              patientPhone: app.patientPhone,
+                            });
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-teal-100/80 dark:bg-teal-900/60 hover:bg-teal-200 dark:hover:bg-teal-800 text-teal-800 dark:text-teal-200 text-[11px] font-bold flex items-center gap-1 border border-teal-300 dark:border-teal-700 transition-colors shadow-2xs"
+                          title="View patient's previous prescriptions, lab reports & allergies"
+                        >
+                          <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                          <span>View Past Records</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleAddMedicationRow}
+                        className="px-2.5 py-1 rounded-lg bg-teal-600 text-white text-[11px] font-bold hover:bg-teal-700 flex items-center gap-1 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Tablet</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* 1-Click Clinical Kits & Templates Toolbar */}
@@ -725,7 +755,28 @@ export const DoctorAppointmentsPage: React.FC = () => {
                   Fee: <strong className="text-slate-700 dark:text-slate-200">${app.fee}</strong>
                 </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {app.status === "confirmed" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rawId = app.patientUserId || (app as any).patientId || "";
+                        const safeId = typeof rawId === "object" && rawId !== null ? (rawId as any)._id || String(rawId) : String(rawId);
+                        setActivePatientForRecords({
+                          patientUserId: safeId,
+                          patientName: app.patientName,
+                          patientEmail: app.patientEmail,
+                          patientPhone: app.patientPhone,
+                        });
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 flex items-center gap-1.5 transition-colors shadow-2xs"
+                      title="View patient's past medical records, prescriptions & allergies"
+                    >
+                      <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span>View Patient Records</span>
+                    </button>
+                  )}
+
                   {editingId !== app._id && app.status !== "completed" && app.status !== "cancelled" && (
                     <button
                       onClick={() => handleStartEditing(app)}
@@ -937,6 +988,17 @@ export const DoctorAppointmentsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Patient Health Records Modal */}
+      {activePatientForRecords && (
+        <PatientRecordsModal
+          patientUserId={activePatientForRecords.patientUserId}
+          patientName={activePatientForRecords.patientName}
+          patientEmail={activePatientForRecords.patientEmail}
+          patientPhone={activePatientForRecords.patientPhone}
+          onClose={() => setActivePatientForRecords(null)}
+        />
       )}
     </div>
   );

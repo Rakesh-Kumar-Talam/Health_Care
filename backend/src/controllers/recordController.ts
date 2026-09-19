@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import HealthRecord from '../models/HealthRecord';
 import Appointment from '../models/Appointment';
+import User from '../models/User';
+import Patient from '../models/Patient';
 import { AuthRequest } from '../middleware/auth';
 
 /**
@@ -305,3 +307,93 @@ export const deleteRecord = async (req: AuthRequest, res: Response): Promise<voi
     res.status(500).json({ success: false, message: error.message || 'Failed to delete record' });
   }
 };
+
+/**
+ * Get patient health records for an authorized doctor or admin
+ */
+export const getPatientRecords = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || (req.user.role !== 'doctor' && req.user.role !== 'admin')) {
+      res.status(403).json({ success: false, message: 'Doctor privileges required to view patient records' });
+      return;
+    }
+
+    const { patientUserId } = req.params;
+    if (!patientUserId || patientUserId === 'undefined' || patientUserId === 'null') {
+      res.status(400).json({ success: false, message: 'Patient ID is required' });
+      return;
+    }
+
+    // Resolve targetUserId whether patientUserId is User._id or Patient._id
+    let targetUserId = patientUserId;
+    let patientProfile = await Patient.findOne({ userId: patientUserId });
+    if (!patientProfile) {
+      const byProfileId = await Patient.findById(patientUserId);
+      if (byProfileId) {
+        patientProfile = byProfileId;
+        targetUserId = byProfileId.userId.toString();
+      }
+    }
+
+    // Auto-sync prescriptions for this patient first
+    const patientUser = await User.findById(targetUserId);
+    await syncAppointmentPrescriptions(targetUserId, patientUser?.name || patientProfile?.name || 'Patient');
+
+    const { category, search } = req.query;
+    const query: any = {
+      $or: [
+        { patientUserId: targetUserId },
+        ...(patientProfile ? [{ patientUserId: patientProfile.userId }] : []),
+      ],
+    };
+
+    if (category && category !== 'all') {
+      query.category = category;
+    }
+
+    if (search && typeof search === 'string' && search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+      query.$and = [
+        {
+          $or: [
+            { title: regex },
+            { doctorName: regex },
+            { hospitalName: regex },
+            { description: regex },
+            { tags: { $in: [regex] } },
+          ],
+        },
+      ];
+    }
+
+    const records = await HealthRecord.find(query).sort({ recordDate: -1, createdAt: -1 });
+
+    // Summary counts by category
+    const allRecords = await HealthRecord.find({
+      $or: [
+        { patientUserId: targetUserId },
+        ...(patientProfile ? [{ patientUserId: patientProfile.userId }] : []),
+      ],
+    });
+
+    const counts = {
+      total: allRecords.length,
+      prescription: allRecords.filter((r) => r.category === 'prescription').length,
+      scanning: allRecords.filter((r) => r.category === 'scanning').length,
+      lab_report: allRecords.filter((r) => r.category === 'lab_report').length,
+      discharge_summary: allRecords.filter((r) => r.category === 'discharge_summary').length,
+      other: allRecords.filter((r) => !['prescription', 'scanning', 'lab_report', 'discharge_summary'].includes(r.category)).length,
+    };
+
+    res.status(200).json({
+      success: true,
+      count: records.length,
+      counts,
+      patientProfile,
+      records,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch patient health records' });
+  }
+};
+
