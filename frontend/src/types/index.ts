@@ -63,6 +63,22 @@ export interface Patient {
     state: string;
     zipCode: string;
   };
+  vitals?: PatientVitals;
+}
+
+export interface PatientVitals {
+  bloodPressure?: {
+    systolic?: number;
+    diastolic?: number;
+  };
+  heightCm?: number;
+  weightKg?: number;
+  bloodSugar?: {
+    fasting?: number;
+    postPrandial?: number;
+    random?: number;
+  };
+  lastUpdated?: string;
 }
 
 export interface Hospital {
@@ -173,6 +189,10 @@ export interface Appointment {
   paymentStatus: "paid" | "pending";
   videoRoomId?: string;
   recordAccessStatus?: "none" | "requested" | "granted" | "denied";
+  patientVitals?: PatientVitals;
+  patientDob?: string;
+  patientGender?: string;
+  patientBloodGroup?: string;
   createdAt: string;
 }
 

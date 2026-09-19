@@ -1,5 +1,5 @@
 import API from "./api";
-import { Medication } from "../types";
+import { Medication, PatientVitals } from "../types";
 
 export const appointmentService = {
   bookAppointment: async (data: any) => {
@@ -36,6 +36,13 @@ export const appointmentService = {
   },
   respondRecordAccess: async (id: string, action: "grant" | "deny" | "revoke") => {
     const res = await API.post(`/appointments/${id}/respond-records`, { action });
+    return res.data;
+  },
+  updatePatientVitals: async (
+    appointmentId: string,
+    vitals: Partial<PatientVitals> & { dateOfBirth?: string }
+  ) => {
+    const res = await API.put(`/appointments/${appointmentId}/vitals`, vitals);
     return res.data;
   },
 };

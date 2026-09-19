@@ -17,6 +17,7 @@ import { HospitalListingPage } from "./pages/HospitalListingPage";
 import { HospitalDetailPage } from "./pages/HospitalDetailPage";
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
 import { MyRecordsPage } from "./pages/MyRecordsPage";
+import { MyHealthPage } from "./pages/MyHealthPage";
 import { DoctorDashboardPage } from "./pages/DoctorDashboardPage";
 import { DoctorAppointmentsPage } from "./pages/DoctorAppointmentsPage";
 import { DoctorContentManagePage } from "./pages/DoctorContentManagePage";
@@ -78,6 +79,14 @@ function App() {
                 />
 
                 {/* Patient Routes */}
+                <Route
+                  path="/my-health"
+                  element={
+                    <ProtectedRoute patientOnly>
+                      <MyHealthPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/my-appointments"
                   element={

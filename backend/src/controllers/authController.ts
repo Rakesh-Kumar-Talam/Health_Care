@@ -201,3 +201,10 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(500).json({ success: false, message: error.message || 'Failed to fetch current user' });
   }
 };
+
+export const updatePatientVitals = async (req: AuthRequest, res: Response): Promise<void> => {
+  res.status(403).json({
+    success: false,
+    message: 'Patients cannot directly alter clinical health vitals. Vitals must be verified and recorded by a consulting doctor during an appointment.',
+  });
+};

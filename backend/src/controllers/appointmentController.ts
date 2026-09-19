@@ -135,12 +135,30 @@ export const getDoctorAppointments = async (req: AuthRequest, res: Response): Pr
       query.appointmentDate = date;
     }
 
-    const appointments = await Appointment.find(query).sort({ appointmentDate: 1, timeSlot: 1 });
+    const appointments = await Appointment.find(query).sort({ appointmentDate: 1, timeSlot: 1 }).lean();
+
+    const patientUserIds = appointments.map((a: any) => a.patientUserId);
+    const patients = await Patient.find({ userId: { $in: patientUserIds } }).lean();
+    const patientMap = new Map();
+    patients.forEach((p: any) => {
+      patientMap.set(p.userId.toString(), p);
+    });
+
+    const appointmentsWithVitals = appointments.map((a: any) => {
+      const patient = patientMap.get(a.patientUserId.toString());
+      return {
+        ...a,
+        patientVitals: patient?.vitals,
+        patientDob: patient?.dateOfBirth,
+        patientGender: patient?.gender,
+        patientBloodGroup: patient?.bloodGroup,
+      };
+    });
 
     res.status(200).json({
       success: true,
-      count: appointments.length,
-      appointments,
+      count: appointmentsWithVitals.length,
+      appointments: appointmentsWithVitals,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Failed to fetch doctor appointments' });
@@ -352,5 +370,70 @@ export const respondRecordAccess = async (req: AuthRequest, res: Response): Prom
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Failed to update record access response' });
+  }
+};
+
+export const updatePatientVitalsByDoctor = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'doctor') {
+      res.status(403).json({ success: false, message: 'Doctor privileges required to update clinical vitals' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { bloodPressure, heightCm, weightKg, bloodSugar, dateOfBirth } = req.body;
+
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    const doctor = await Doctor.findOne({ userId: req.user._id });
+    if (!doctor || appointment.doctorId.toString() !== doctor._id.toString()) {
+      res.status(403).json({ success: false, message: 'Not authorized to record vitals for this appointment' });
+      return;
+    }
+
+    const patient = await Patient.findOne({ userId: appointment.patientUserId });
+    if (!patient) {
+      res.status(404).json({ success: false, message: 'Patient profile not found' });
+      return;
+    }
+
+    const now = new Date();
+    patient.vitals = {
+      bloodPressure: bloodPressure
+        ? {
+            systolic: bloodPressure.systolic !== undefined && bloodPressure.systolic !== '' ? Number(bloodPressure.systolic) : undefined,
+            diastolic: bloodPressure.diastolic !== undefined && bloodPressure.diastolic !== '' ? Number(bloodPressure.diastolic) : undefined,
+          }
+        : patient.vitals?.bloodPressure,
+      heightCm: heightCm !== undefined && heightCm !== '' ? Number(heightCm) : patient.vitals?.heightCm,
+      weightKg: weightKg !== undefined && weightKg !== '' ? Number(weightKg) : patient.vitals?.weightKg,
+      bloodSugar: bloodSugar
+        ? {
+            fasting: bloodSugar.fasting !== undefined && bloodSugar.fasting !== '' ? Number(bloodSugar.fasting) : undefined,
+            postPrandial: bloodSugar.postPrandial !== undefined && bloodSugar.postPrandial !== '' ? Number(bloodSugar.postPrandial) : undefined,
+            random: bloodSugar.random !== undefined && bloodSugar.random !== '' ? Number(bloodSugar.random) : undefined,
+          }
+        : patient.vitals?.bloodSugar,
+      lastUpdated: now,
+    };
+
+    if (dateOfBirth) {
+      patient.dateOfBirth = new Date(dateOfBirth);
+    }
+
+    await patient.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Patient clinical vitals updated successfully by doctor',
+      vitals: patient.vitals,
+      lastUpdated: now,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to update patient vitals' });
   }
 };

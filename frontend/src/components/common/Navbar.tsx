@@ -119,6 +119,18 @@ export const Navbar: React.FC = () => {
                 {user?.role === "patient" && (
                   <>
                     <Link
+                      to="/my-health"
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                        isActive("/my-health")
+                          ? "bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <Activity className="w-4 h-4" />
+                      My Health
+                    </Link>
+
+                    <Link
                       to="/my-appointments"
                       className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
                         isActive("/my-appointments")
@@ -353,6 +365,13 @@ export const Navbar: React.FC = () => {
 
               {user?.role === "patient" && (
                 <>
+                  <Link
+                    to="/my-health"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    My Health & Vitals
+                  </Link>
                   <Link
                     to="/my-appointments"
                     onClick={() => setMobileMenuOpen(false)}

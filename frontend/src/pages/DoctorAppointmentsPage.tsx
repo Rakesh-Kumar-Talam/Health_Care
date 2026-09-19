@@ -29,6 +29,7 @@ import {
   RotateCcw,
   Check,
   Activity,
+  Heart,
   Lock,
   ShieldCheck,
 } from "lucide-react";
@@ -90,6 +91,75 @@ export const DoctorAppointmentsPage: React.FC = () => {
       alert(err.response?.data?.message || "Failed to send record access request to patient. Please try again.");
     } finally {
       setRequestingRecordId(null);
+    }
+  };
+
+  // Doctor Patient Vitals State & Handlers
+  const [selectedApptForVitals, setSelectedApptForVitals] = useState<Appointment | null>(null);
+  const [savingDoctorVitals, setSavingDoctorVitals] = useState<boolean>(false);
+  const [doctorVitalsForm, setDoctorVitalsForm] = useState({
+    systolic: "120",
+    diastolic: "80",
+    heightCm: "172",
+    weightKg: "68",
+    dateOfBirth: "1996-05-14",
+    fastingSugar: "94",
+    postPrandialSugar: "130",
+  });
+
+  const handleOpenVitalsModal = (app: Appointment) => {
+    setSelectedApptForVitals(app);
+    setDoctorVitalsForm({
+      systolic: app.patientVitals?.bloodPressure?.systolic?.toString() || "120",
+      diastolic: app.patientVitals?.bloodPressure?.diastolic?.toString() || "80",
+      heightCm: app.patientVitals?.heightCm?.toString() || "172",
+      weightKg: app.patientVitals?.weightKg?.toString() || "68",
+      dateOfBirth: app.patientDob ? new Date(app.patientDob).toISOString().split("T")[0] : "1996-05-14",
+      fastingSugar: app.patientVitals?.bloodSugar?.fasting?.toString() || "94",
+      postPrandialSugar: app.patientVitals?.bloodSugar?.postPrandial?.toString() || "130",
+    });
+  };
+
+  const handleSaveDoctorVitals = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApptForVitals) return;
+
+    setSavingDoctorVitals(true);
+    try {
+      const payload = {
+        bloodPressure: {
+          systolic: doctorVitalsForm.systolic ? Number(doctorVitalsForm.systolic) : undefined,
+          diastolic: doctorVitalsForm.diastolic ? Number(doctorVitalsForm.diastolic) : undefined,
+        },
+        heightCm: doctorVitalsForm.heightCm ? Number(doctorVitalsForm.heightCm) : undefined,
+        weightKg: doctorVitalsForm.weightKg ? Number(doctorVitalsForm.weightKg) : undefined,
+        bloodSugar: {
+          fasting: doctorVitalsForm.fastingSugar ? Number(doctorVitalsForm.fastingSugar) : undefined,
+          postPrandial: doctorVitalsForm.postPrandialSugar ? Number(doctorVitalsForm.postPrandialSugar) : undefined,
+        },
+        dateOfBirth: doctorVitalsForm.dateOfBirth || undefined,
+      };
+
+      const res = await appointmentService.updatePatientVitals(selectedApptForVitals._id, payload);
+      if (res.success) {
+        setAppointments((prev) =>
+          prev.map((a) =>
+            a._id === selectedApptForVitals._id
+              ? {
+                  ...a,
+                  patientVitals: res.vitals || payload,
+                  patientDob: payload.dateOfBirth,
+                }
+              : a
+          )
+        );
+        setSelectedApptForVitals(null);
+      }
+    } catch (err: any) {
+      console.error("Failed to update patient vitals:", err);
+      alert(err.response?.data?.message || "Failed to update patient vitals. Please try again.");
+    } finally {
+      setSavingDoctorVitals(false);
     }
   };
 
@@ -402,6 +472,56 @@ export const DoctorAppointmentsPage: React.FC = () => {
                     Symptoms reported: {app.symptoms}
                   </div>
                 )}
+              </div>
+
+              {/* Patient Clinical Vitals & Last Updated Strip */}
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-teal-50/70 to-sky-50/70 dark:from-teal-950/30 dark:to-sky-950/30 border border-teal-200/70 dark:border-teal-900/60 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-teal-900 dark:text-teal-200">
+                    <Heart className="w-4 h-4 text-rose-500" />
+                    <span>Patient Vitals:</span>
+                  </div>
+                  {app.patientVitals ? (
+                    <>
+                      <span className="text-slate-700 dark:text-slate-200">
+                        BP: <strong>{app.patientVitals.bloodPressure?.systolic || 120}/{app.patientVitals.bloodPressure?.diastolic || 80} mmHg</strong>
+                      </span>
+                      <span className="text-slate-700 dark:text-slate-200">
+                        Height: <strong>{app.patientVitals.heightCm || 172} cm</strong>
+                      </span>
+                      <span className="text-slate-700 dark:text-slate-200">
+                        Weight: <strong>{app.patientVitals.weightKg || 68} kg</strong>
+                      </span>
+                      {app.patientVitals.bloodSugar?.fasting && (
+                        <span className="text-slate-700 dark:text-slate-200">
+                          Fasting Sugar: <strong>{app.patientVitals.bloodSugar.fasting} mg/dL</strong>
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-slate-500 italic">
+                      No vitals recorded yet for this patient
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  <span>
+                    Last Updated:{" "}
+                    <strong className="text-slate-800 dark:text-slate-200">
+                      {app.patientVitals?.lastUpdated
+                        ? new Date(app.patientVitals.lastUpdated).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "Never recorded"}
+                    </strong>
+                  </span>
+                </div>
               </div>
 
               {/* Prescription / Notes Editor or Display */}
@@ -853,6 +973,17 @@ export const DoctorAppointmentsPage: React.FC = () => {
                     )
                   )}
 
+                  {/* Doctor Option to Record or Update Patient Vitals */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenVitalsModal(app)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900 border border-teal-200 dark:border-teal-800 flex items-center gap-1.5 transition-colors shadow-2xs"
+                    title="Record or update patient vitals (BP, Height, Weight, Blood Sugar, DOB)"
+                  >
+                    <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    <span>{app.patientVitals?.lastUpdated ? "Update Vitals" : "Record Vitals"}</span>
+                  </button>
+
                   {editingId !== app._id && app.status !== "completed" && app.status !== "cancelled" && (
                     <button
                       onClick={() => handleStartEditing(app)}
@@ -1075,6 +1206,187 @@ export const DoctorAppointmentsPage: React.FC = () => {
           patientPhone={activePatientForRecords.patientPhone}
           onClose={() => setActivePatientForRecords(null)}
         />
+      )}
+
+      {/* Doctor Update Patient Vitals Modal */}
+      {selectedApptForVitals && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Update Patient Vitals
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Patient: <strong>{selectedApptForVitals.patientName}</strong> • {selectedApptForVitals.patientPhone || selectedApptForVitals.patientEmail}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedApptForVitals(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold p-1 rounded-md"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Date of Last Update Banner */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 text-xs flex items-center justify-between">
+              <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-teal-600" />
+                <span>Date of Last Update:</span>
+              </span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">
+                {selectedApptForVitals.patientVitals?.lastUpdated
+                  ? new Date(selectedApptForVitals.patientVitals.lastUpdated).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "Never recorded yet"}
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveDoctorVitals} className="space-y-4 overflow-y-auto pr-1">
+              {/* Blood Pressure */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Blood Pressure (mmHg)
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[11px] text-slate-500">Systolic (Top #)</span>
+                    <input
+                      type="number"
+                      placeholder="120"
+                      value={doctorVitalsForm.systolic}
+                      onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, systolic: e.target.value })}
+                      className="input-health text-xs w-full mt-1"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500">Diastolic (Bottom #)</span>
+                    <input
+                      type="number"
+                      placeholder="80"
+                      value={doctorVitalsForm.diastolic}
+                      onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, diastolic: e.target.value })}
+                      className="input-health text-xs w-full mt-1"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Height & Weight */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Height (cm)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="172"
+                    value={doctorVitalsForm.heightCm}
+                    onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, heightCm: e.target.value })}
+                    className="input-health text-xs w-full mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="68"
+                    value={doctorVitalsForm.weightKg}
+                    onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, weightKg: e.target.value })}
+                    className="input-health text-xs w-full mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Patient Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={doctorVitalsForm.dateOfBirth}
+                  onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, dateOfBirth: e.target.value })}
+                  className="input-health text-xs w-full mt-1"
+                />
+              </div>
+
+              {/* Blood Sugar */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Blood Sugar (mg/dL)
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[11px] text-slate-500">Fasting (mg/dL)</span>
+                    <input
+                      type="number"
+                      placeholder="94"
+                      value={doctorVitalsForm.fastingSugar}
+                      onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, fastingSugar: e.target.value })}
+                      className="input-health text-xs w-full mt-1"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-500">Post-Meal (mg/dL)</span>
+                    <input
+                      type="number"
+                      placeholder="130"
+                      value={doctorVitalsForm.postPrandialSugar}
+                      onChange={(e) => setDoctorVitalsForm({ ...doctorVitalsForm, postPrandialSugar: e.target.value })}
+                      className="input-health text-xs w-full mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Preview BMI calculation */}
+              {doctorVitalsForm.heightCm && doctorVitalsForm.weightKg && (
+                <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs text-teal-800 dark:text-teal-300 flex items-center justify-between">
+                  <span className="font-medium">Calculated BMI:</span>
+                  <span className="font-bold">
+                    {(Number(doctorVitalsForm.weightKg) / Math.pow(Number(doctorVitalsForm.heightCm) / 100, 2)).toFixed(1)} kg/m²
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setSelectedApptForVitals(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingDoctorVitals}
+                  className="btn-primary !py-2 !px-4 !text-xs flex items-center gap-1.5 shadow-md"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savingDoctorVitals ? "Saving..." : "Save Patient Vitals"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

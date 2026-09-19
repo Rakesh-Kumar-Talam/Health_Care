@@ -1,5 +1,20 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface IVitals {
+  bloodPressure?: {
+    systolic?: number;
+    diastolic?: number;
+  };
+  heightCm?: number;
+  weightKg?: number;
+  bloodSugar?: {
+    fasting?: number;
+    postPrandial?: number;
+    random?: number;
+  };
+  lastUpdated?: Date;
+}
+
 export interface IPatient extends Document {
   userId: mongoose.Types.ObjectId;
   name: string;
@@ -10,6 +25,7 @@ export interface IPatient extends Document {
   gender: 'male' | 'female' | 'other' | 'unspecified';
   bloodGroup: string;
   allergies: string[];
+  vitals?: IVitals;
   emergencyContact: {
     name: string;
     phone: string;
@@ -77,6 +93,20 @@ const PatientSchema = new Schema<IPatient>(
       city: { type: String, default: '' },
       state: { type: String, default: '' },
       zipCode: { type: String, default: '' },
+    },
+    vitals: {
+      bloodPressure: {
+        systolic: { type: Number, default: 120 },
+        diastolic: { type: Number, default: 80 },
+      },
+      heightCm: { type: Number, default: 168 },
+      weightKg: { type: Number, default: 65 },
+      bloodSugar: {
+        fasting: { type: Number, default: 95 },
+        postPrandial: { type: Number, default: 130 },
+        random: { type: Number },
+      },
+      lastUpdated: { type: Date, default: Date.now },
     },
   },
   {
