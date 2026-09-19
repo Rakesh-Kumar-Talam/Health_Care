@@ -29,6 +29,8 @@ import {
   RotateCcw,
   Check,
   Activity,
+  Lock,
+  ShieldCheck,
 } from "lucide-react";
 import {
   BUILT_IN_CLINICAL_KITS,
@@ -72,6 +74,24 @@ export const DoctorAppointmentsPage: React.FC = () => {
     patientEmail?: string;
     patientPhone?: string;
   } | null>(null);
+  const [requestingRecordId, setRequestingRecordId] = useState<string | null>(null);
+
+  const handleRequestRecordAccess = async (appId: string) => {
+    setRequestingRecordId(appId);
+    try {
+      const res = await appointmentService.requestRecordAccess(appId);
+      if (res.success) {
+        setAppointments((prev) =>
+          prev.map((a) => (a._id === appId ? { ...a, recordAccessStatus: "requested" } : a))
+        );
+      }
+    } catch (err: any) {
+      console.error("Failed to request patient records:", err);
+      alert(err.response?.data?.message || "Failed to send record access request to patient. Please try again.");
+    } finally {
+      setRequestingRecordId(null);
+    }
+  };
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -394,24 +414,42 @@ export const DoctorAppointmentsPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {app.status === "confirmed" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const rawId = app.patientUserId || (app as any).patientId || "";
-                            const safeId = typeof rawId === "object" && rawId !== null ? (rawId as any)._id || String(rawId) : String(rawId);
-                            setActivePatientForRecords({
-                              patientUserId: safeId,
-                              patientName: app.patientName,
-                              patientEmail: app.patientEmail,
-                              patientPhone: app.patientPhone,
-                            });
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-teal-100/80 dark:bg-teal-900/60 hover:bg-teal-200 dark:hover:bg-teal-800 text-teal-800 dark:text-teal-200 text-[11px] font-bold flex items-center gap-1 border border-teal-300 dark:border-teal-700 transition-colors shadow-2xs"
-                          title="View patient's previous prescriptions, lab reports & allergies"
-                        >
-                          <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                          <span>View Past Records</span>
-                        </button>
+                        app.recordAccessStatus === "granted" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const rawId = app.patientUserId || (app as any).patientId || "";
+                              const safeId = typeof rawId === "object" && rawId !== null ? (rawId as any)._id || String(rawId) : String(rawId);
+                              setActivePatientForRecords({
+                                patientUserId: safeId,
+                                patientName: app.patientName,
+                                patientEmail: app.patientEmail,
+                                patientPhone: app.patientPhone,
+                              });
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-teal-100/80 dark:bg-teal-900/60 hover:bg-teal-200 dark:hover:bg-teal-800 text-teal-800 dark:text-teal-200 text-[11px] font-bold flex items-center gap-1 border border-teal-300 dark:border-teal-700 transition-colors shadow-2xs"
+                            title="View patient's previous prescriptions, lab reports & allergies"
+                          >
+                            <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                            <span>View Past Records</span>
+                          </button>
+                        ) : app.recordAccessStatus === "requested" ? (
+                          <span className="px-2 py-1 rounded-lg bg-amber-100/80 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-[11px] font-medium border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-500 animate-pulse" />
+                            <span>Records Pending Approval</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={requestingRecordId === app._id}
+                            onClick={() => handleRequestRecordAccess(app._id)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold flex items-center gap-1 border border-slate-300 dark:border-slate-700 transition-colors"
+                            title="Ask patient to grant record access"
+                          >
+                            <Lock className="w-3 h-3 text-slate-500" />
+                            <span>{requestingRecordId === app._id ? "Sending..." : "Request Records"}</span>
+                          </button>
+                        )
                       )}
                       <button
                         type="button"
@@ -757,24 +795,62 @@ export const DoctorAppointmentsPage: React.FC = () => {
 
                 <div className="flex items-center gap-2 flex-wrap">
                   {app.status === "confirmed" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const rawId = app.patientUserId || (app as any).patientId || "";
-                        const safeId = typeof rawId === "object" && rawId !== null ? (rawId as any)._id || String(rawId) : String(rawId);
-                        setActivePatientForRecords({
-                          patientUserId: safeId,
-                          patientName: app.patientName,
-                          patientEmail: app.patientEmail,
-                          patientPhone: app.patientPhone,
-                        });
-                      }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 flex items-center gap-1.5 transition-colors shadow-2xs"
-                      title="View patient's past medical records, prescriptions & allergies"
-                    >
-                      <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                      <span>View Patient Records</span>
-                    </button>
+                    app.recordAccessStatus === "granted" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const rawId = app.patientUserId || (app as any).patientId || "";
+                          const safeId = typeof rawId === "object" && rawId !== null ? (rawId as any)._id || String(rawId) : String(rawId);
+                          setActivePatientForRecords({
+                            patientUserId: safeId,
+                            patientName: app.patientName,
+                            patientEmail: app.patientEmail,
+                            patientPhone: app.patientPhone,
+                          });
+                        }}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 flex items-center gap-1.5 transition-colors shadow-2xs"
+                        title="Patient has granted consent. View health records, prescriptions & allergies"
+                      >
+                        <Activity className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                        <span>View Patient Records</span>
+                      </button>
+                    ) : app.recordAccessStatus === "requested" ? (
+                      <span
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1.5 cursor-default"
+                        title="Access request sent. Awaiting approval from patient."
+                      >
+                        <Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                        <span>Access Requested (Pending)</span>
+                      </span>
+                    ) : app.recordAccessStatus === "denied" ? (
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900"
+                          title="Patient denied access to health records"
+                        >
+                          Access Denied
+                        </span>
+                        <button
+                          type="button"
+                          disabled={requestingRecordId === app._id}
+                          onClick={() => handleRequestRecordAccess(app._id)}
+                          className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 transition-colors"
+                        >
+                          {requestingRecordId === app._id ? "Sending..." : "Re-request"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={requestingRecordId === app._id}
+                        onClick={() => handleRequestRecordAccess(app._id)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-colors shadow-2xs"
+                        title="Request patient permission to view their historical health records"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span>{requestingRecordId === app._id ? "Sending Request..." : "Request Records"}</span>
+                      </button>
+                    )
                   )}
 
                   {editingId !== app._id && app.status !== "completed" && app.status !== "cancelled" && (

@@ -33,6 +33,7 @@ export interface IAppointment extends Document {
   fee: number;
   paymentStatus: 'paid' | 'pending';
   videoRoomId?: string;
+  recordAccessStatus?: 'none' | 'requested' | 'granted' | 'denied';
   createdAt: Date;
 }
 
@@ -144,6 +145,11 @@ const AppointmentSchema = new Schema<IAppointment>(
     videoRoomId: {
       type: String,
       default: '',
+    },
+    recordAccessStatus: {
+      type: String,
+      enum: ['none', 'requested', 'granted', 'denied'],
+      default: 'none',
     },
   },
   {

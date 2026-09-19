@@ -30,4 +30,12 @@ export const appointmentService = {
     const res = await API.patch(`/appointments/${id}/cancel`);
     return res.data;
   },
+  requestRecordAccess: async (id: string) => {
+    const res = await API.post(`/appointments/${id}/request-records`);
+    return res.data;
+  },
+  respondRecordAccess: async (id: string, action: "grant" | "deny" | "revoke") => {
+    const res = await API.post(`/appointments/${id}/respond-records`, { action });
+    return res.data;
+  },
 };

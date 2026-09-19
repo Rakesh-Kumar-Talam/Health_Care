@@ -273,3 +273,84 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
     res.status(500).json({ success: false, message: error.message || 'Failed to cancel appointment' });
   }
 };
+
+/**
+ * Request patient health records access (Doctor action)
+ */
+export const requestRecordAccess = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'doctor') {
+      res.status(403).json({ success: false, message: 'Doctor privileges required to request record access' });
+      return;
+    }
+
+    const { id } = req.params;
+    const appointment = await Appointment.findById(id);
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    if (appointment.doctorUserId.toString() !== req.user._id.toString()) {
+      res.status(403).json({ success: false, message: 'Not authorized for this appointment' });
+      return;
+    }
+
+    appointment.recordAccessStatus = 'requested';
+    await appointment.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Access request sent to patient successfully',
+      appointment,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to request record access' });
+  }
+};
+
+/**
+ * Respond to record access request (Patient action: 'grant' | 'deny' | 'revoke')
+ */
+export const respondRecordAccess = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { action } = req.body; // 'grant' | 'deny' | 'revoke'
+
+    const appointment = await Appointment.findById(id);
+
+    if (!appointment) {
+      res.status(404).json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
+    if (appointment.patientUserId.toString() !== req.user._id.toString()) {
+      res.status(403).json({ success: false, message: 'Only the patient can grant or deny record access' });
+      return;
+    }
+
+    if (action === 'grant') {
+      appointment.recordAccessStatus = 'granted';
+    } else if (action === 'revoke') {
+      appointment.recordAccessStatus = 'none';
+    } else {
+      appointment.recordAccessStatus = 'denied';
+    }
+
+    await appointment.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Record access ${appointment.recordAccessStatus} successfully`,
+      appointment,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to update record access response' });
+  }
+};

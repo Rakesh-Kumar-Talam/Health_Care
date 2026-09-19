@@ -172,6 +172,7 @@ export interface Appointment {
   fee: number;
   paymentStatus: "paid" | "pending";
   videoRoomId?: string;
+  recordAccessStatus?: "none" | "requested" | "granted" | "denied";
   createdAt: string;
 }
 

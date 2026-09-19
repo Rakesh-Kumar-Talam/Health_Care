@@ -13,9 +13,9 @@ import {
   FileText,
   Phone,
   CheckCircle2,
-  XCircle,
   Stethoscope,
   ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
 
 export const MyAppointmentsPage: React.FC = () => {
@@ -23,6 +23,31 @@ export const MyAppointmentsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [activeVideoModal, setActiveVideoModal] = useState<Appointment | null>(null);
+  const [respondingAppId, setRespondingAppId] = useState<string | null>(null);
+
+  const handleRespondRecordAccess = async (appId: string, action: "grant" | "deny" | "revoke") => {
+    setRespondingAppId(appId);
+    try {
+      const res = await appointmentService.respondRecordAccess(appId, action);
+      if (res.success) {
+        setAppointments((prev) =>
+          prev.map((app) =>
+            app._id === appId
+              ? {
+                  ...app,
+                  recordAccessStatus: action === "grant" ? "granted" : action === "revoke" ? "none" : "denied",
+                }
+              : app
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to respond to record access request:", err);
+      alert("Failed to update access consent. Please try again.");
+    } finally {
+      setRespondingAppId(null);
+    }
+  };
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -187,6 +212,83 @@ export const MyAppointmentsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Doctor Medical Records Access Consent Prompt */}
+              {app.recordAccessStatus === "requested" && (
+                <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 shrink-0">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-amber-900 dark:text-amber-100 text-sm flex items-center gap-1.5">
+                        <span>Medical Records Access Requested</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                          Action Needed
+                        </span>
+                      </h4>
+                      <p className="text-amber-800 dark:text-amber-300/90 mt-0.5">
+                        <strong>{app.doctorName}</strong> has requested access to review your historical health records, lab reports, and medications to prepare for your consultation.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                    <button
+                      type="button"
+                      disabled={respondingAppId === app._id}
+                      onClick={() => handleRespondRecordAccess(app._id, "deny")}
+                      className="px-3.5 py-1.5 rounded-xl border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 font-semibold text-xs transition-colors"
+                    >
+                      Deny
+                    </button>
+                    <button
+                      type="button"
+                      disabled={respondingAppId === app._id}
+                      onClick={() => handleRespondRecordAccess(app._id, "grant")}
+                      className="px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{respondingAppId === app._id ? "Updating..." : "Allow Access"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Access Granted Confirmation Badge */}
+              {app.recordAccessStatus === "granted" && (
+                <div className="px-3.5 py-2.5 rounded-xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900/60 flex items-center justify-between text-xs text-teal-900 dark:text-teal-200">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                    <span>
+                      Medical record access granted to <strong>{app.doctorName}</strong> for this consultation.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={respondingAppId === app._id}
+                    onClick={() => handleRespondRecordAccess(app._id, "revoke")}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 underline transition-colors shrink-0 ml-2"
+                  >
+                    Revoke Access
+                  </button>
+                </div>
+              )}
+
+              {/* Access Denied Badge */}
+              {app.recordAccessStatus === "denied" && (
+                <div className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                  <span>Record access request from {app.doctorName} was denied.</span>
+                  <button
+                    type="button"
+                    disabled={respondingAppId === app._id}
+                    onClick={() => handleRespondRecordAccess(app._id, "grant")}
+                    className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 hover:underline shrink-0 ml-2"
+                  >
+                    Allow Now
+                  </button>
+                </div>
+              )}
 
               {/* Patient Symptoms or Clinical Notes */}
               {app.symptoms && (

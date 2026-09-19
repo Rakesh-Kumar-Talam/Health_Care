@@ -339,6 +339,27 @@ export const getPatientRecords = async (req: AuthRequest, res: Response): Promis
     const patientUser = await User.findById(targetUserId);
     await syncAppointmentPrescriptions(targetUserId, patientUser?.name || patientProfile?.name || 'Patient');
 
+    // For doctors, verify that patient has explicitly granted record access
+    if (req.user.role === 'doctor') {
+      const consentAppointment = await Appointment.findOne({
+        doctorUserId: req.user._id,
+        $or: [
+          { patientUserId: targetUserId },
+          ...(patientProfile ? [{ patientUserId: patientProfile.userId }] : []),
+        ],
+        recordAccessStatus: 'granted',
+      });
+
+      if (!consentAppointment) {
+        res.status(403).json({
+          success: false,
+          consentRequired: true,
+          message: 'Patient consent required to access health records. Please request access from the patient first.',
+        });
+        return;
+      }
+    }
+
     const { category, search } = req.query;
     const query: any = {
       $or: [
